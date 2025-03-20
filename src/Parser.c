@@ -387,11 +387,8 @@ static void CompoundStatement(Compound* compound)
 		else
 			FreeStmt(&stmt);
 
-		// Try to get rid of tokens
-		if (!(stmt.flags & 0x01) && !(dec.flags & 0x01)) {
-			printf("destroying token:\n");
-			DisplayToken(GetToken());
-		}
+		if (!(stmt.flags & 0x01) && !(dec.flags & 0x01))
+			return;
 	}
 }
 

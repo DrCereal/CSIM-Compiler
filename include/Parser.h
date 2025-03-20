@@ -3,11 +3,6 @@
 
 #include <stdint.h>
 
-#define MAX_STATEMENT_TOKENS	32
-#define MAX_DECLARATION_TOKENS	32
-#define MAX_DECLARATIONS		32
-#define MAX_STATEMENTS			32
-
 // Flags:
 // 0 - valid
 // 1 - constant
@@ -74,7 +69,7 @@ typedef struct
 	Token		name;
 	Token		return_type;
 
-	// TODO: args?
+	// TODO: args
 	
 	Compound	compound;
 } Function;
