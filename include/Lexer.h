@@ -12,6 +12,7 @@ typedef enum
 	EQUAL,
 	IDENTIFIER,
 	KEYWORD,
+	MINUS,
 	NUMBER,
 	PAREN_OPEN,
 	PAREN_CLOSE,
@@ -28,7 +29,9 @@ typedef struct
 	char		data[TOKEN_DATA_SIZE];
 } Token;
 
-void DisplayTokens(unsigned int token_amount);
+void DisplayToken(Token t);
+void DisplayGlobalTokens(unsigned int token_amount);
+void DisplayTokens(Token* tokens, unsigned int amount);
 void PrintTokenType(TokenType type);
 int LoadTokens();
 

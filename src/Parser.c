@@ -1,9 +1,40 @@
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "Lexer.h"
 #include "Parser.h"
+
+static void DecAddToken(Declaration* dec, Token t)
+{
+	if (dec->tokens == NULL) {
+		dec->tokens = calloc(64, sizeof(t));
+		dec->alloc = 64;
+	}
+
+	if (dec->size == dec->alloc) {
+		dec->tokens = realloc(dec->tokens, dec->alloc * 2 * sizeof(t));
+		dec->alloc *= 2;
+	}
+
+	dec->tokens[dec->size++] = t;
+}
+
+static void AddDeclaration(Compound* com, Declaration dec)
+{
+	if (com->declarations == NULL) {
+		com->declarations = calloc(32, sizeof(dec));
+		com->dec_alloc = 32;
+	}
+
+	if (com->dec_size == com->dec_alloc) {
+		com->declarations = realloc(com->declarations, com->dec_size * 2 * sizeof(dec));
+		com->dec_alloc *= 2;
+	}
+
+	com->declarations[com->dec_size++] = dec;
+}
 
 static int Expect(TokenType type)
 {
@@ -30,6 +61,8 @@ static Token TypeSpecifier()
 
 	if (!strcmp(ret.data, "i32"))
 		goto eat;
+	else
+		ret.type = INVALID_TOKEN;
 
 eat:
 	GetToken();
@@ -59,8 +92,10 @@ static Token DirectDeclarator()
 {
 	Token ret = Identifier();
 
-	if (ret.type == INVALID_TOKEN)
+	if (ret.type == INVALID_TOKEN) {
+		printf("not identifier\n");
 		return ret;
+	}
 
 	Token t = PeekToken();
 	if (t.type != PAREN_OPEN)
@@ -85,123 +120,130 @@ static inline Token Declarator()
 }
 
 // TODO: Last case
-static int PrimaryExpression(Token* buffer, int i)
+static int PrimaryExpression(Declaration* dec)
 {
 	Token t = PeekToken();
 	if (t.type != IDENTIFIER && t.type != NUMBER && t.type != STRING)
 		return 0;
 	GetToken();		// Eat
 	
-	assert(i < MAX_DECLARATION_TOKENS && "PrimaryExpression(): too many tokens!\n");
-	buffer[i] = t;
-    
+	DecAddToken(dec, t);
 	return 1;
 }
 
-static inline int PostfixExpression(Token* buffer, int i)
+static inline int PostfixExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return PrimaryExpression(buffer, i);
+	return PrimaryExpression(dec);
 }
 
-static inline int UnaryExpression(Token* buffer, int i)
+static inline int UnaryExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return PostfixExpression(buffer, i);
+	return PostfixExpression(dec);
 }
 
-static inline int CastExpression(Token* buffer, int i)
+static inline int CastExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return UnaryExpression(buffer, i);
+	return UnaryExpression(dec);
 }
 
-static inline int MultiplicativeExpression(Token* buffer, int i)
+static inline int MultiplicativeExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return CastExpression(buffer, i);
+	return CastExpression(dec);
 }
 
-static inline int AdditiveExpression(Token* buffer, int i)
+static inline int AdditiveExpression(Declaration* dec)
+{
+
+	int total = MultiplicativeExpression(dec);
+
+	Token next = PeekToken();
+	if (next.type == PLUS || next.type == MINUS) {
+		DecAddToken(dec, next);
+		GetToken();		// Eat
+		total += AdditiveExpression(dec);
+	}
+
+	return total;
+}
+
+static inline int ShiftExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return MultiplicativeExpression(buffer, i);
+	return AdditiveExpression(dec);
 }
 
-static inline int ShiftExpression(Token* buffer, int i)
+static inline int RelationalExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return AdditiveExpression(buffer, i);
+	return ShiftExpression(dec);
 }
 
-static inline int RelationalExpression(Token* buffer, int i)
+static inline int EqualityExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return ShiftExpression(buffer, i);
+	return RelationalExpression(dec);
 }
 
-static inline int EqualityExpression(Token* buffer, int i)
+static inline int AndExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return RelationalExpression(buffer, i);
+	return EqualityExpression(dec);
 }
 
-static inline int AndExpression(Token* buffer, int i)
+static inline int ExclusiveOrExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return EqualityExpression(buffer, i);
+	return AndExpression(dec);
 }
 
-static inline int ExclusiveOrExpression(Token* buffer, int i)
+static inline int InclusiveOrExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return AndExpression(buffer, i);
+	return ExclusiveOrExpression(dec);
 }
 
-static inline int InclusiveOrExpression(Token* buffer, int i)
+static inline int LogicalAndExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return ExclusiveOrExpression(buffer, i);
+	return InclusiveOrExpression(dec);
 }
 
-static inline int LogicalAndExpression(Token* buffer, int i)
+static inline int LogicalOrExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return InclusiveOrExpression(buffer, i);
+	return LogicalAndExpression(dec);
 }
 
-static inline int LogicalOrExpression(Token* buffer, int i)
+static inline int ConditionalExpression(Declaration* dec)
 {
 	// TODO: Implement
-	return LogicalAndExpression(buffer, i);
+	return LogicalOrExpression(dec);
 }
 
-static inline int ConditionalExpression(Token* buffer, int i)
-{
-	// TODO: Implement
-	return LogicalOrExpression(buffer, i);
-}
-
-static inline int AssignmentExpression(Token* buffer, int i)
+static inline int AssignmentExpression(Declaration* dec)
 {
 	// TODO: Other options
-	return ConditionalExpression(buffer, i);
+	return ConditionalExpression(dec);
 }
 
-static inline int Initializer(Token* buffer, int i)
+static inline int Initializer(Declaration* dec)
 {
 	// TODO: Other options
-	return AssignmentExpression(buffer, i);
+	return AssignmentExpression(dec);
 }
 
-static int InitDeclarator(Token* identifier, Token* buffer)
+static int InitDeclarator(Declaration* dec)
 {
 	// TODO: Case where it's just a declarator
 	int count = 0;
 	
-	*identifier = Declarator();
-	if (identifier->type == INVALID_TOKEN)
-		return -1;
+	dec->identifier = Declarator();
+	if (dec->identifier.type == INVALID_TOKEN) 
+		return -1; 
 	else
 		count++;
 
@@ -210,28 +252,24 @@ static int InitDeclarator(Token* identifier, Token* buffer)
 		return count;
 	GetToken();		// Eat
 	
-	count += Initializer(buffer, 0);
+	count += Initializer(dec);
 	return count;
 }
 
 static Declaration FuncDeclaration()
 {
-	Declaration ret = {.valid = 0};
+	Declaration ret = {.flags = 0};
 
 	ret.type = DeclarationSpecifier();
 	if (ret.type.type == INVALID_TOKEN)
 		return ret;
 
-	Token buffer[MAX_DECLARATION_TOKENS];
-	int grabbed = InitDeclarator(&ret.identifier, buffer);
+	int grabbed = InitDeclarator(&ret);
 	if (grabbed <= 0) {
 		printf("ERROR: Got useless empty declaration!\n");
 		return ret;
 	}
-	ret.valid = 1;
-
-	for (int i = 0; i < grabbed; i++)
-		ret.tokens[i] = buffer[i];
+	ret.flags |= 0x01;
 
 	if (Expect(SEMICOLON))
 		GetToken();		// Eat
@@ -242,25 +280,71 @@ static Declaration FuncDeclaration()
 static void CompoundStatement(Compound* compound)
 {
 	compound->valid = 0;
-	compound->declaration_amount = 0;
-	compound->statement_amount = 0;
 
 	if (!Expect(BRACE_OPEN))
 		return;
+	GetToken();
 
-	//Declaration dec = FuncDeclaration();
-	Declaration dec = {.valid = 1};
+	compound->valid = 1;
 
-	if (dec.valid) {
-		// TODO: Add it to list.
-		int amount = compound->declaration_amount;
-		if (amount < MAX_DECLARATIONS) {
-			compound->valid = 1;
-			compound->declarations[amount] = dec;
-			compound->declaration_amount++;
+	while (!AtEOT()) {
+		Declaration dec = FuncDeclaration();
+
+		if (dec.flags & 0x01) {
+			AddDeclaration(compound, dec);
 		} else {
-			printf("ERROR: Too many declarations!\n");
+			printf("removing tokens...\n");
+			GetToken();		// TODO: REMOVE
 		}
+
+		// TODO: Get statements.
+	}
+}
+
+static Function g_functions[128];
+static unsigned int g_functions_size = 0;
+
+static void DisplayFunction(Function func)
+{
+	printf("%s\n", func.name.data);
+	printf("return type: %s\n", func.return_type.data);
+
+	Compound com = func.compound;
+	if (com.declarations != NULL) {
+		printf("declarations: %i\n", com.dec_size);
+
+		for (unsigned int i = 0; i < com.dec_size; i++) {
+			Declaration dec = com.declarations[i];
+			printf("\nDeclaration:\n");
+			DisplayToken(dec.type);
+			DisplayToken(dec.identifier);
+			DisplayTokens(dec.tokens, dec.size);
+		}
+	}
+	
+	printf("statements: %i\n", func.compound.stmt_size);
+}
+
+void DisplayFunctions()
+{
+	printf("\nfunctions:\n");
+	for (unsigned int i = 0; i < g_functions_size; i++)
+		DisplayFunction(g_functions[i]);
+}
+
+static void FreeFunction(Function func)
+{
+	Compound com = func.compound;
+
+	if (com.declarations != NULL) {
+		for (unsigned int i = 0; i < com.dec_size; i++) {
+			Declaration dec = com.declarations[i];
+		
+			if (dec.tokens != NULL)
+				free(dec.tokens);
+		}
+
+		free(com.declarations);
 	}
 }
 
@@ -273,14 +357,18 @@ static Function FunctionDefinition()
 		ret.return_type = type;
 
 	ret.name = Declarator();
-	if (ret.name.type != IDENTIFIER)
+	if (ret.name.type != IDENTIFIER) {
+		printf("Didn't get identifier\n");
 		return ret;
+	}
 
 	// TODO: Declarations.
 	
 	CompoundStatement(&ret.compound);	
-	if (!ret.compound.valid)
+	if (!ret.compound.valid) {
+		printf("Didn't get valid compound statement.\n");
 		return ret;
+	}
 
 	ret.valid = 1;
 	return ret;
@@ -296,8 +384,10 @@ static void ExternalDeclaration()
 	if (tmp.valid) {
 		// We got a function, cool.
 		printf("Got a function! YAY\n");
+		g_functions[g_functions_size++] = tmp;
 	} else {
 		printf("ERROR: Got no function!\n");
+		FreeFunction(tmp);
 		GetToken();		// Eat
 	}
 
@@ -312,4 +402,10 @@ void ParseBegin()
 	}
 
 	printf("Done parsing!\n");
+}
+
+void ParseCleanup()
+{
+	for (unsigned int i = 0; i < g_functions_size; i++)
+		FreeFunction(g_functions[i]);
 }

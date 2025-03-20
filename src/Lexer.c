@@ -23,22 +23,32 @@ static inline void AddToken(Token t)
 	g_tokens[g_token_amount++] = t;
 }
 
-void DisplayTokens(unsigned int token_amount)
+void DisplayToken(Token t)
+{
+	TokenType type = t.type;
+	printf("type: %i\n", type);
+		
+	if (type == STRING || type == IDENTIFIER || type == KEYWORD)
+		printf("data: %s\n", t.data);
+	else if (type == NUMBER)
+		printf("number: %i\n", t.num);
+}
+
+void DisplayGlobalTokens(unsigned int token_amount)
 {
 	unsigned int cap = MIN(MAX_TOKENS, token_amount);
 	cap = MIN(g_token_amount, cap);
 
-	printf("Tokens:\n");
+	printf("\nTokens:\n");
+	for (unsigned int i = 0; i < cap; i++)
+		DisplayToken(g_tokens[i]);
+}
 
-	for (unsigned int i = 0; i < cap; i++) {
-		TokenType type = g_tokens[i].type;
-		printf("type: %i\n", type);
-		
-		if (type == STRING || type == IDENTIFIER || type == KEYWORD)
-			printf("data: %s\n", g_tokens[i].data);
-		else if (type == NUMBER)
-			printf("number: %i\n", g_tokens[i].num);
-	}
+void DisplayTokens(Token* tokens, unsigned int amount)
+{
+	printf("\nTokens:\n");
+	for (unsigned int i = 0; i < amount; i++)
+		DisplayToken(tokens[i]);
 }
 
 static const char* g_type_to_string[] = { 
@@ -76,6 +86,9 @@ static Token GetCharacter(char c)
 		break;
 	case '}':
 		CHARACTER_TOKEN(BRACE_CLOSE);
+		break;
+	case '-':
+		CHARACTER_TOKEN(MINUS);
 		break;
 	case '(':
 		CHARACTER_TOKEN(PAREN_OPEN);
@@ -196,7 +209,7 @@ int LoadTokens()
 		t.type = INVALID_TOKEN;
 	}	
 
-	DisplayTokens(100);
+	DisplayGlobalTokens(100);
 
 	printf("Done tokenizing!\n");
 

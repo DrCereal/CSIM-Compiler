@@ -25,6 +25,11 @@ int OpenFile(const char* file_name)
 	return g_file != NULL;
 }
 
+inline void FileCleanup()
+{
+	fclose(g_file);
+}
+
 int AtEOF()
 {
 	if (g_buffer.eof)

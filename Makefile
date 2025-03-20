@@ -1,6 +1,6 @@
 CC = gcc
-#ARGS = -Wall -Wextra -Werror
-ARGS = -Wall -Wextra
+ARGS = -Wall -Wextra -Werror
+#ARGS = -Wall -Wextra
 
 run: build
 	./bin/program

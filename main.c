@@ -19,5 +19,10 @@ int main(int argc, char** argv)
 	LoadTokens();
 	ParseBegin();
 
+	DisplayFunctions();
+
+	ParseCleanup();
+	FileCleanup();
+
 	return 0;
 }

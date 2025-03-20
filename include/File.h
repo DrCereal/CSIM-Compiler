@@ -12,6 +12,7 @@ typedef struct {
 
 int AtEOF();
 int OpenFile(const char* file_name);
+void FileCleanup();
 char GetC();
 char PeekC();
 void UnGetC();
