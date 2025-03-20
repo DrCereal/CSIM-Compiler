@@ -16,22 +16,39 @@ typedef struct
 {
 	uint8_t	flags;
 	int32_t	size;
-	int32_t	alloc;
-	int32_t	partial_eval;
+	int32_t alloc;
+	int32_t eval;
 
-	Token	type;
-	Token	identifier;
+	Token* tokens;
+} Expression;
 
-	Token* 	tokens;
-} Declaration;
+// TODO: Collapse these structures into one.
+// Flags:
+// 0 - valid
+// 1 - used
 
 typedef struct
 {
-	char	valid;
-	int		size;
-	int		alloc;
+	uint8_t		flags;
 
-	Token*	tokens;
+	Token		type;
+	Token		identifier;
+	Token		scope;		// This will be the function's name.
+
+	Expression	expr;
+} Declaration;
+
+// Flags:
+// 0 - valid
+
+typedef struct
+{
+	uint8_t		flags;
+	int32_t		size;
+	int32_t		alloc;
+
+	Expression 	expr;
+	Token*		tokens;
 } Statement;
 
 typedef struct
@@ -46,9 +63,13 @@ typedef struct
 	Statement*	 	statements;
 } Compound;
 
+// Flags:
+// 0 - valid
+// 1 - used
+
 typedef struct
 {
-	char		valid;
+	uint8_t		flags;
 
 	Token		name;
 	Token		return_type;

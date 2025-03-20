@@ -46,13 +46,16 @@ void DisplayGlobalTokens(unsigned int token_amount)
 
 void DisplayTokens(Token* tokens, unsigned int amount)
 {
+	if (tokens == NULL)
+		return;
+
 	printf("\nTokens:\n");
 	for (unsigned int i = 0; i < amount; i++)
 		DisplayToken(tokens[i]);
 }
 
 static const char* g_type_to_string[] = { 
-	"{", "}", "=", "IDENTIFIER", "KEYWORD", "NUMBER", "(", ")", ".", "+",
+	"{", "}", "=", "IDENTIFIER", "KEYWORD", "-", "NUMBER", "(", ")", ".", "+",
 	";", "STRING"
 };
 
